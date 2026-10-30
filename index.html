@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BiteDash | Modern Food Delivery</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="logo"><i class="fa-solid fa-utensils"></i> Bite<span>Dash</span></div>
+    <div class="cart-btn" onclick="toggleCartModal()">
+      <i class="fa-solid fa-bag-shopping"></i> Cart (<span id="cart-count">0</span>)
+    </div>
+  </nav>
+
+  <!-- Hero Header -->
+  <header class="hero">
+    <h1>Cravings Delivered Right To Your Door</h1>
+    <p>Discover top-rated restaurants near you with ultra-fast delivery</p>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="container">
+    <h2 class="section-title">Popular Restaurants & Dishes</h2>
+    <div class="restaurant-grid" id="restaurant-list">
+      <!-- Injected via JavaScript -->
+    </div>
+  </main>
+
+  <!-- Cart / Checkout Modal -->
+  <div id="cartModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-basket-shopping"></i> Your Order Summary</h3>
+        <span class="close" onclick="toggleCartModal()">&times;</span>
+      </div>
+      <div id="cart-items" class="cart-items">
+        <p class="empty-msg">Your cart is empty.</p>
+      </div>
+      <div class="cart-footer">
+        <div class="total-row">
+          <span>Grand Total:</span>
+          <span id="grand-total">₹0</span>
+        </div>
+        <div class="checkout-inputs">
+          <input type="text" id="custName" placeholder="Enter Full Name" required>
+          <input type="text" id="custAddress" placeholder="Delivery Address / Hostel Name" required>
+        </div>
+        <button class="btn btn-order" onclick="placeOrder()">Confirm & Place Order</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2026 BiteDash Inc. Full Stack Advanced Project for Slash Mark Internship.</p>
+  </footer>
+
+  <script>
+    const mockRestaurants = [
+      {
+        id: 1,
+        name: "Biryani Junction",
+        cuisine: "South Indian, Biryani",
+        rating: 4.6,
+        deliveryTime: "30-35 mins",
+        image: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=500&q=80",
+        menu: [
+          { id: 101, name: "Hyderabadi Chicken Dum Biryani", price: 280 },
+          { id: 102, name: "Paneer Butter Masala", price: 210 },
+          { id: 103, name: "Butter Naan (2 pcs)", price: 60 }
+        ]
+      },
+      {
+        id: 2,
+        name: "Pizza Crust & Co.",
+        cuisine: "Italian, Fast Food",
+        rating: 4.4,
+        deliveryTime: "25-30 mins",
+        image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&q=80",
+        menu: [
+          { id: 201, name: "Farmhouse Cheese Pizza", price: 349 },
+          { id: 202, name: "Garlic Breadsticks", price: 139 },
+          { id: 203, name: "Choco Lava Cake", price: 99 }
+        ]
+      },
+      {
+        id: 3,
+        name: "Urban Burger Lab",
+        cuisine: "American, Burgers",
+        rating: 4.5,
+        deliveryTime: "20-25 mins",
+        image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&q=80",
+        menu: [
+          { id: 301, name: "Double Patty Crispy Burger", price: 199 },
+          { id: 302, name: "Peri Peri French Fries", price: 119 },
+          { id: 303, name: "Thick Cold Coffee", price: 89 }
+        ]
+      }
+    ];
+
+    let cart = [];
+
+    function renderRestaurants() {
+      const container = document.getElementById('restaurant-list');
+      container.innerHTML = mockRestaurants.map(rest => `
+        <div class="restaurant-card">
+          <img src="${rest.image}" alt="${rest.name}">
+          <div class="card-body">
+            <div class="rest-header">
+              <h3>${rest.name}</h3>
+              <span class="rating"><i class="fa-solid fa-star"></i> ${rest.rating}</span>
+            </div>
+            <p class="cuisine">${rest.cuisine} • ${rest.deliveryTime}</p>
+            <div class="menu-list">
+              <h4>Recommended Items:</h4>
+              ${rest.menu.map(item => `
+                <div class="menu-item">
+                  <div>
+                    <p class="dish-name">${item.name}</p>
+                    <span class="price">₹${item.price}</span>
+                  </div>
+                  <button class="add-btn" onclick="addToCart(${item.id}, '${item.name}', ${item.price})">+ Add</button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function addToCart(id, name, price) {
+      const existing = cart.find(i => i.id === id);
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        cart.push({ id, name, price, qty: 1 });
+      }
+      updateCartUI();
+    }
+
+    function updateCartUI() {
+      const count = cart.reduce((acc, item) => acc + item.qty, 0);
+      document.getElementById('cart-count').textContent = count;
+
+      const cartContainer = document.getElementById('cart-items');
+      if (cart.length === 0) {
+        cartContainer.innerHTML = '<p class="empty-msg">Your cart is empty.</p>';
+        document.getElementById('grand-total').textContent = '₹0';
+        return;
+      }
+
+      let total = 0;
+      cartContainer.innerHTML = cart.map(item => {
+        total += item.price * item.qty;
+        return `
+          <div class="cart-line">
+            <span>${item.name} x ${item.qty}</span>
+            <span>₹${item.price * item.qty}</span>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('grand-total').textContent = `₹${total}`;
+    }
+
+    function toggleCartModal() {
+      const modal = document.getElementById('cartModal');
+      modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+    function placeOrder() {
+      const name = document.getElementById('custName').value.trim();
+      const addr = document.getElementById('custAddress').value.trim();
+
+      if (cart.length === 0) return alert('Your cart is empty!');
+      if (!name || !addr) return alert('Please enter your name and delivery address.');
+
+      const orderId = 'SM-' + Math.floor(100000 + Math.random() * 900000);
+      alert(`Order Confirmed! 🎉\nOrder ID: ${orderId}\nThank you, ${name}! Your food is on its way.`);
+
+      cart = [];
+      updateCartUI();
+      toggleCartModal();
+      document.getElementById('custName').value = '';
+      document.getElementById('custAddress').value = '';
+    }
+
+    renderRestaurants();
+  </script>
+</body>
+</html>
